@@ -1,0 +1,3 @@
+ipfshttpclient==0.8.0a2
+scalecodec==1.0.19
+substrate-interface==1.1.1
