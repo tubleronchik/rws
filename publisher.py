@@ -26,7 +26,10 @@ class Worker():
         if self.device_seed is None:
             try:
                 with open("./config.txt") as f:
-                    self.device = f.readline()
+                    self.device_seed = str(f.readline())
+                    self.keypair = Keypair.create_from_mnemonic(self.device_seed, ss58_format=32)
+                    self.device_public = self.keypair.ss58_address
+                    print(f"[Robonomics] Device account: {self.device_public}")
             except FileNotFoundError:
                 self.get_seed()
         try:
@@ -141,13 +144,11 @@ class Worker():
             exit()
         print("Save seed? y/n")
         response = str(input()).lower()
+        self.device_public = self.keypair.ss58_address
         if response == "y":
             with open("./config.txt", "a") as f:
-                f.write(str(self.device_seed))
+                f.write(f"{self.device_seed}")
             print("Config file is saved!")
-            
-        self.device_public = self.keypair.ss58_address
-        print(f"public: {self.device_public}")
         print(f"[Robonomics] Device account: {self.device_public}")
 
 
