@@ -3,6 +3,8 @@ echo "Configuring workspace. Please wait..."
 if [ ! -d "./rws-main" ] 
 then 
     echo "Downloading scripts..."
+    sudo apt update
+    sudo apt install python3-pip
     wget https://github.com/tubleronchik/rws/archive/main.zip > /dev/null 2>&1
     unzip main.zip > /dev/null 2>&1
     echo "Done"
