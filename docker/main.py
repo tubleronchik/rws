@@ -6,12 +6,12 @@ from substrateinterface import SubstrateInterface, Keypair
 from substrateinterface.exceptions import SubstrateRequestException
 from random import randint
 import typing as tp
-import getpass
+import os
 
 
-class Worker():
+class Worker:
     def __init__(self) -> None:
-        self.device_seed: str = None
+        self.device_seed: str = os.environ["SEED"]
         self.stop_thread: bool = False
         self.device_public: str = None
         self.keypair: Keypair = None
@@ -20,23 +20,25 @@ class Worker():
         ipfs_client = ipfshttpclient.connect(endpoint)
         ipfs_client.pubsub.publish(topic, data)
         print(f"[Pubsub] {data}")
-        Timer(15, self.to_pubsub, args=(f'{{ "time": {time.time()}, "id": "mydevice", "type": "iot" }}', "/ip4/127.0.0.1/tcp/5001/http", "airalab.lighthouse.5.robonomics.eth",)).start()
+        Timer(
+            15,
+            self.to_pubsub,
+            args=(
+                f'{{ "time": {time.time()}, "id": "mydevice", "type": "iot" }}',
+                "/ip4/127.0.0.1/tcp/5001/http",
+                "airalab.lighthouse.5.robonomics.eth",
+            ),
+        ).start()
 
     def launch_listener(self) -> None:
-        if self.device_seed is None:
-            try:
-                with open("./config.txt") as f:
-                    self.device_seed = str(f.readline())
-                    self.keypair = Keypair.create_from_mnemonic(self.device_seed, ss58_format=32)
-                    self.device_public = self.keypair.ss58_address
-                    print(f"[Robonomics] Device account: {self.device_public}")
-            except FileNotFoundError:
-                self.get_seed()
+        self.keypair = Keypair.create_from_mnemonic(self.device_seed, ss58_format=32)
+        self.device_public = self.keypair.ss58_address
+        print(f"[Robonomics] Device account: {self.device_public}")
         try:
             substrate = SubstrateInterface(
                 url="wss://main.frontier.rpc.robonomics.network",
                 ss58_format=32,
-                type_registry_preset='substrate-node-template',
+                type_registry_preset="substrate-node-template",
                 type_registry={
                     "types": {
                         "Record": "Vec<u8>",
@@ -56,7 +58,7 @@ class Worker():
                                 ["start", "Compact<u64>"],
                                 ["end", "Compact<u64>"],
                             ],
-                        }
+                        },
                     }
                 },
             )
@@ -68,7 +70,10 @@ class Worker():
             ch = substrate.get_chain_head()
             events = substrate.get_events(ch)
             for e in events:
-                if e.value["event_id"] == "NewLaunch" and e.params[1]["value"] == self.device_public:
+                if (
+                    e.value["event_id"] == "NewLaunch"
+                    and e.params[1]["value"] == self.device_public
+                ):
                     t = Thread(target=self.to_datalog)
                     web_address = e.params[0]["value"]
                     if e.params[2]["value"]:
@@ -78,7 +83,7 @@ class Worker():
                     else:
                         print(f"New Launch from {web_address} | OFF")
                         self.stop_thread = True
-                        print("[Robonomics] Stopping device")   
+                        print("[Robonomics] Stopping device")
             time.sleep(12)
 
     def to_datalog(self) -> None:
@@ -86,7 +91,7 @@ class Worker():
             substrate = SubstrateInterface(
                 url="wss://main.frontier.rpc.robonomics.network",
                 ss58_format=32,
-                type_registry_preset='substrate-node-template',
+                type_registry_preset="substrate-node-template",
                 type_registry={
                     "types": {
                         "Record": "Vec<u8>",
@@ -106,7 +111,7 @@ class Worker():
                                 ["start", "Compact<u64>"],
                                 ["end", "Compact<u64>"],
                             ],
-                        }
+                        },
                     }
                 },
             )
@@ -115,48 +120,40 @@ class Worker():
             exit()
 
         while True:
-            data = f'{{"time": {time.time()}, "data": {randint(0, 1000)}, "type": "iot"}}'
+            data = (
+                f'{{"time": {time.time()}, "data": {randint(0, 1000)}, "type": "iot"}}'
+            )
             call = substrate.compose_call(
-                    call_module = "Datalog",
-                    call_function = "record",
-                    call_params = {
-                        "record": data
-                    }
-                )
-            extrinsic = substrate.create_signed_extrinsic(call=call, keypair=self.keypair)
+                call_module="Datalog",
+                call_function="record",
+                call_params={"record": data},
+            )
+            extrinsic = substrate.create_signed_extrinsic(
+                call=call, keypair=self.keypair
+            )
             try:
                 receipt = substrate.submit_extrinsic(extrinsic, wait_for_inclusion=True)
-                print(f"[Robonomics] https://robonomics.subscan.io/extrinsic/{receipt.extrinsic_hash}")
+                print(
+                    f"[Robonomics] https://robonomics.subscan.io/extrinsic/{receipt.extrinsic_hash}"
+                )
             except SubstrateRequestException as e:
-                print(f'[Robonomics] Something went wrong during extrinsic submission to Robonomics: {e}')
+                print(
+                    f"[Robonomics] Something went wrong during extrinsic submission to Robonomics: {e}"
+                )
             time.sleep(12)
             if self.stop_thread:
                 break
 
 
-    def get_seed(self) -> None:
-        print("Enter seed. It won't be visible!")
-        self.device_seed = getpass.getpass(prompt="Seed: ")
-        try:
-            self.keypair = Keypair.create_from_mnemonic(self.device_seed, ss58_format=32)
-        except ValueError:
-            print("Wrong seed!")
-            exit()
-        print("Save seed? y/n")
-        response = str(input()).lower()
-        self.device_public = self.keypair.ss58_address
-        if response == "y":
-            with open("./config.txt", "a") as f:
-                f.write(f"{self.device_seed}")
-            print("Config file is saved!")
-        print(f"[Robonomics] Device account: {self.device_public}")
-
-
 if __name__ == "__main__":
     m = Worker()
     Thread(target=m.launch_listener).start()
-    Timer(15, m.to_pubsub, args=(f'{{ "time": {time.time()}, "id": "mydevice", "type": "iot" }}', "/ip4/127.0.0.1/tcp/5001/http", "airalab.lighthouse.5.robonomics.eth",)).start()
-
-
-
-
+    Timer(
+        15,
+        m.to_pubsub,
+        args=(
+            f'{{ "time": {time.time()}, "id": "mydevice", "type": "iot" }}',
+            "/ip4/127.0.0.1/tcp/5001/http",
+            "airalab.lighthouse.5.robonomics.eth",
+        ),
+    ).start()
