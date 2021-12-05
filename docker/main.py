@@ -19,12 +19,14 @@ class Worker:
     def to_pubsub(self, data: str, endpoint: str, topic: str) -> None:
         ipfs_client = ipfshttpclient.connect(endpoint)
         ipfs_client.pubsub.publish(topic, data)
+        device_id = os.environ["DEVICE_ID"]
+
         print(f"[Pubsub] {data}")
         Timer(
             15,
             self.to_pubsub,
             args=(
-                f'{{ "time": {time.time()}, "id": "mydevice", "type": "iot" }}',
+                f'{{ "time": {time.time()}, "id": {device_id if device_id else "mydevice"}, "type": "iot" }}',
                 "/ip4/127.0.0.1/tcp/5001/http",
                 "airalab.lighthouse.5.robonomics.eth",
             ),

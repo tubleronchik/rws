@@ -1,4 +1,5 @@
 #!/bin/bash
+DEVICE_ID=""
 if [ ! -d "./rws-main" ] 
 then 
     echo "Configuring workspace. It may take a few minutes. You may need to enter your password."
@@ -35,4 +36,4 @@ then
 else
   seed=$(<config.txt)
 fi
-sudo SEED="$seed" docker-compose up
+sudo SEED="$seed" DEVICE_ID="$DEVICE_ID" docker-compose up
