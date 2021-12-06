@@ -16,17 +16,16 @@ class Worker:
         self.device_public: str = None
         self.keypair: Keypair = None
 
-    def to_pubsub(self, data: str, endpoint: str, topic: str) -> None:
+    def to_pubsub(self, endpoint: str, topic: str) -> None:
         ipfs_client = ipfshttpclient.connect(endpoint)
-        ipfs_client.pubsub.publish(topic, data)
         device_id = os.environ["DEVICE_ID"]
-
+        data = f'{{ "time": {time.time()}, "id": {device_id if device_id else "mydevice"}, "type": "iot" }}'
+        ipfs_client.pubsub.publish(topic, data)
         print(f"[Pubsub] {data}")
         Timer(
             15,
             self.to_pubsub,
             args=(
-                f'{{ "time": {time.time()}, "id": {device_id if device_id else "mydevice"}, "type": "iot" }}',
                 "/ip4/127.0.0.1/tcp/5001/http",
                 "airalab.lighthouse.5.robonomics.eth",
             ),
@@ -154,7 +153,6 @@ if __name__ == "__main__":
         15,
         m.to_pubsub,
         args=(
-            f'{{ "time": {time.time()}, "id": "mydevice", "type": "iot" }}',
             "/ip4/127.0.0.1/tcp/5001/http",
             "airalab.lighthouse.5.robonomics.eth",
         ),

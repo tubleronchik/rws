@@ -1,5 +1,6 @@
 #!/bin/bash
 echo "Configuring workspace. Please wait..."
+DEVICE_ID=""
 if [ ! -d "./rws-main" ] 
 then 
     echo "Downloading scripts... You may need to enter your password"
@@ -28,5 +29,7 @@ then
 fi
 ipfs daemon --enable-pubsub-experiment > /dev/null 2>&1 &
 echo "Worspace is configured"
+export DEVICE_ID
 python3 publisher.py
+
 
