@@ -16,5 +16,4 @@ services:
     build: .
     network_mode: "service:ipfs-daemon"
     environment:
-      SEED: ${SEED}
       DEVICE_ID: ${DEVICE_ID}

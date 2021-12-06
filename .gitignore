@@ -1,0 +1,2 @@
+docker/config/*
+!/docker/config/config_template.json
