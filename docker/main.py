@@ -12,7 +12,7 @@ import json
 
 class Worker:
     def __init__(self) -> None:
-        self.device_seed: str = None
+        self.device_seed: str = os.environ["SEED"]
         self.stop_thread: bool = False
         self.device_public: str = None
         self.keypair: Keypair = None
@@ -33,17 +33,10 @@ class Worker:
         ).start()
 
     def launch_listener(self) -> None:
-        try:
-            with open("./config/config.json") as f:
-                self.device_seed = json.loads((f.readline()))["seed"]
-                self.keypair = Keypair.create_from_mnemonic(
-                    self.device_seed, ss58_format=32
-                )
-                self.device_public = self.keypair.ss58_address
-                print(f"[Robonomics] Device account: {self.device_public}")
-        except FileNotFoundError:
-            print("COnfiguration file is not found!")
-            exit()
+        self.keypair = Keypair.create_from_mnemonic(self.device_seed, ss58_format=32)
+        self.device_public = self.keypair.ss58_address
+        print(f"[Robonomics] Device account: {self.device_public}")
+
         try:
             substrate = SubstrateInterface(
                 url="wss://main.frontier.rpc.robonomics.network",
