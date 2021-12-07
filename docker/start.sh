@@ -5,14 +5,17 @@ then
     echo "You need to install docker first. Check https://docs.docker.com/engine/install/"
     exit 1
 fi
-if [ ! -d "./rws-main" ] 
-then 
-    echo "Configuring workspace. It may take a few minutes. You may need to enter your password"
-    sudo apt-get install zip unzip
-    wget https://github.com/tubleronchik/rws/archive/main.zip > /dev/null 2>&1
-    unzip main.zip > /dev/null 2>&1
+if [[ ! $(git --version) ]]
+then
+    echo "You need to install git first. Check https://github.com/git-guides/install-git"
+    exit 1
 fi
-cd rws-main/docker
+if [ ! -d "./rws" ] 
+then 
+    echo "Configuring workspace. It may take a few minutes."
+    git clone https://github.com/tubleronchik/rws.git
+fi
+cd rws/docker
 if [ ! -f "config.txt" ] 
 then
   echo "Enter seed phrase. It won't be visible!"
